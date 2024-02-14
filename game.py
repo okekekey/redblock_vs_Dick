@@ -4,17 +4,25 @@ import pygame
 import sys
 import random
 
+from settings import Settings
+from player import Player
+
 #initialize pygame
 pygame.init()
 
-#creating a display surface
-screen = pygame.display.set_mode((800, 400))
-#creating a reckt of the screen
+
+settings = Settings()
+
+# Display/Screen surface
+screen = pygame.display.set_mode((settings.screen_width, settings.screen_height))  
 screen_rect = screen.get_rect()
-#screen.fill('Blue')
-#creating a name of the screen
-pygame.display.set_caption('red block vs dick.exe')
-#creating a clock object
+pygame.display.set_caption('red block vs Dick.exe')
+
+# Creating an instance of a player
+player1 = Player(settings, screen)
+
+
+
 clock = pygame.time.Clock()
 
 
@@ -49,6 +57,7 @@ bonus_live.fill('White')
 bonus_live_rect = bonus_live.get_rect()
 bonus_live_rect.right = random.randint(spawn_rate, int(spawn_rate * 4))
 bonus_live_rect.top = random.randint(bonus_live_rect.height, screen_rect.centery)
+
 
 #creating a playa
 player = pygame.Surface((50, 100), pygame.SRCALPHA) #needs to make a proper rotation
@@ -400,8 +409,11 @@ while True:
             dck_rect.bottom = ground_rect.top
             screen.blit(dck, dck_rect)
             screen.blit(player, player_rect)
-        
+            
+            #screen.blit(player1.image, player1.rect)
+            player1.blitme()
 
+        
 
 
     #update display
