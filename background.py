@@ -1,170 +1,185 @@
 #https://ddorn.gitlab.io/post/2021-04-01-creating-a-retro-sunset-with-pygame/
+
 import pygame
 import pygame.gfxdraw
+import random
 
-from math import *
+from math import cos, sin, pi
 
 from settings import Settings
 
-pygame.init()
-settings = Settings()
-#SIZE = (640, 360)
-W = settings.screen_width
-H = settings.screen_height
-SIZE = (W, H)
+class Background():
+    """A class to draw background and UI elements"""
+    
+    def __init__(self, settings, screen) -> None:
+        """Initialize all elements of background"""
+        #self.settings = settings
+        self.screen = screen        
 
-# colors for gradients
-SUN_TOP = pygame.Color(255, 218, 69)
-SUN_BOTTOM = pygame.Color(255, 79, 105)
-SKY_TOP = pygame.Color(73, 231, 236)
-SKY_BOTTOM = pygame.Color(171, 31, 101)
-LINES = pygame.Color(255, 79, 105)
-BG_COLOR = pygame.Color(43, 15, 84)
+        # screen size
+        self.screen_width = settings.screen_width
+        self.screen_height = settings.screen_height
 
-# band height for sun and sky
-BAND_HEIGHT = 3
-band_height_sky = W // 100
-# sun center
-INFINITY = pygame.Vector2(W / 2, H * 0.46 // BAND_HEIGHT * BAND_HEIGHT)
+        # colors for gradient effects
+        self.sun_top_color = pygame.Color(255, 218, 69)
+        self.sun_bottom_color = pygame.Color(255, 79, 105)
+        self.sky_top_color = pygame.Color(33, 81, 86)
+        self.sky_bottom_color = pygame.Color(131, 31, 81)
+        self.starry_sky_stars = pygame.Color(255, 255, 255)
+        self.lines_color = pygame.Color(5, 5, 5) #try black
+        self.bg_color = pygame.Color(43, 15, 84)
 
+        # sun settings
+        self.sun_band_height = 7
+        self.sun_radius = self.screen_height // 25
+        self.sun_center = pygame.Vector2(self.screen_width / 2, 
+                                         self.screen_height * 0.46 // self.sun_band_height * self.sun_band_height) # idk why so complcted
 
-def chrange(x, input_range, output_range):
-    """Map the interval input_range to output_range."""
-    # Linarly map to [0, 1]
-    normalised = (x - input_range[0]) / (input_range[1] - input_range[0])
-    # And back to the output range.
-    return normalised * (output_range[1] - output_range[0]) + output_range[0]
+        # sky settings
+        self.sky_band_height = self.screen_height // 50
+        self.stars_number = self.screen_height // 100
 
-
-def from_polar(radius, angle):
-    """Convert polar coordinate with the angle in degrees to a pygame vector."""
-    v = pygame.Vector2()
-    v.from_polar((radius, angle))
-    return v
-
-
-def draw(display, time):
-    """Draw each part of the scene on the display."""
-    draw_sky(display)
-    #draw_sunrays(display, time)
-    draw_sun(display)
-    #draw_vertical_lines(display)
-    #draw_horizontal_lines(display, time)
+        # line settings 
+        self.vertical_lines_center = self.sun_center.copy()
+        self.vertical_lines_center[1] = self.sun_center[1] + self.sun_radius
 
 
-def draw_sky(display, top=SKY_TOP, bottom=SKY_BOTTOM):
-    """Draw the sky gradient in band by band."""
+    def draw(self, time):
+        """Draw each part of the scene on the display."""
+        self.draw_sky()
+        self.draw_starry_sky()
+        self.draw_sunrays(time)
+        self.draw_sun()
+        self.draw_vertical_lines()
+        self.draw_horizontal_lines(time)
+        
 
-    for band in range(0, H // 2, band_height_sky):
-        #For each band, calculates an intermediate color by linearly interpolating (lerp) between the top and bottom colors 
-        color = top.lerp(bottom, band / H * 2)
-        print(band / H * 2)
-        display.fill(color, (0, band, W, band_height_sky))
-
-
-def draw_sun(display, radius=54, top=SUN_TOP, bottom=SUN_BOTTOM):
-    """Draw a sun with a gradient and some stripes."""
-
-    # We add one to make sure the borders of the sun are not cropped
-    size = radius * 2 + 1, radius * 2 + 1
-    # The gradient is an offscreen surface,
-    # as we need to modify it before we blit it
-    gradient = pygame.Surface(size)
-
-    # Drawing the gradient
-    for y in range(0, size[1], BAND_HEIGHT):
-        color = top.lerp(bottom, y / size[1])
-        gradient.fill(color, (0, y, size[1], BAND_HEIGHT))
-
-    # Drawing the shape of the sun on an other surface.
-    mask = pygame.Surface(size)
-    # Defining the shape of the sun, a white circle
-    pygame.draw.circle(mask, "white", (radius, radius), radius)
-
-    # Removing bands = drawing in black
-    for y in range(BAND_HEIGHT, size[1], BAND_HEIGHT):
-        pygame.gfxdraw.hline(mask, 0, size[1], y, (0, 0, 0))
-
-    gradient.blit(mask, (0, 0), special_flags=pygame.BLEND_MULT)
-    gradient.set_colorkey((0, 0, 0))
-
-    display.blit(gradient, gradient.get_rect(center=INFINITY))
+    def draw_sky(self):
+        """Draw the sky gradient band by band."""
+        top = self.sky_top_color
+        bottom = self.sky_bottom_color
+        
+        for band in range(0, self.screen_height // 2,
+                           self.sky_band_height):
+            #For each band, calculates an intermediate color by linearly interpolating (lerp) between the top and bottom colors 
+            color = top.lerp(bottom, band / self.screen_height * 2)
+            self.screen.fill(color, 
+                        (0, band, self.screen_width, self.sky_band_height))
 
 
-def draw_vertical_lines(display):
-    """Draw vertical lines converging to the sun."""
+    def draw_starry_sky(self):
+        """Draw the starry sky """
 
-    # Erase the lower part
-    second_half = pygame.Rect(0, H / 2, W, H / 2)
-    display.fill(BG_COLOR, second_half)
+        # Generate random stars
+        stars = [(random.randint(0, self.screen_width), random.randint(0, self.screen_height//2)) for star in range(self.stars_number)]
+        # stars = []
+        # for star in range(self.stars_number):
+        #     star = (random.randint(0, self.screen_width), random.randint(0, self.screen_height//2))
+        #     stars.append(star)
 
-    # Vertical lines
-    n_lines = 17
-    for n in range(n_lines):
-        n = chrange(n, (0, n_lines - 1), (-pi / 2, pi / 2))
-        angle = chrange(sin(n), (-1, 1), (0, pi))
-
-        x = INFINITY[0] + 1000 * cos(angle)
-        y = INFINITY[1] + 1000 * sin(angle)
-
-        segment = second_half.clipline(x, y, *INFINITY)
-        if segment:
-            pygame.draw.line(display, LINES, *segment)
+        for star in stars:
+            pygame.draw.circle(self.screen, self.starry_sky_stars, star, random.randint(1,3))  # Small white dots for stars
 
 
-def draw_horizontal_lines(display, time):
-    """Draw moving horizontal lines for the ground."""
+    def draw_sun(self):
+        """Draw a sun with a gradient and some stripes."""
+        top = self.sun_top_color
+        bottom = self.sun_bottom_color
+        # We add one to make sure the borders of the sun are not cropped
+        size = self.sun_radius * 2 + 1, self.sun_radius * 2 + 1
+        # The gradient is an offscreen surface,
+        # as we need to modify it before we blit it
+        gradient = pygame.Surface(size)
 
-    anim_h = H - INFINITY[1]
-    prop = 3 / 4
-    dy = -time % (anim_h * (1 - prop))
+        # Drawing the gradient
+        for band in range(0, size[1], self.sun_band_height):
+            color = top.lerp(bottom, band / size[1])
+            gradient.fill(color, (0, band, size[1], self.sun_band_height))
 
-    for n in range(100):
-        y = INFINITY[1] + (anim_h - dy) * (prop ** n)
-        if y < H / 2:
-            break
-        pygame.gfxdraw.hline(display, 0, W, round(y), LINES)
-    pygame.gfxdraw.hline(display, 0, W, H // 2, LINES)
+        # Drawing the shape of the sun on an other surface.
+        mask = pygame.Surface(size)
+        # Defining the shape of the sun, a white circle
+        pygame.draw.circle(mask, "white", (self.sun_radius, self.sun_radius), self.sun_radius)
 
+        # Removing bands = drawing in black
+        for band in range(self.sun_band_height, size[1], self.sun_band_height):
+            pygame.gfxdraw.hline(mask, 0, size[1], band, (0, 0, 0))
 
-def draw_sunrays(display, time):
-    """Draw rotating rays originating at the sun's center."""
+        gradient.blit(mask, (0, 0), special_flags=pygame.BLEND_MULT)
+        gradient.set_colorkey((0, 0, 0))
 
-    span = 5
-    for angle in range(0, 360, span * 2):
-        angle += time / 7
+        self.screen.blit(gradient, gradient.get_rect(center=self.sun_center))
 
-        p1 = INFINITY + from_polar(1000, angle)
-        p2 = INFINITY + from_polar(1000, angle + span)
-        points = [INFINITY, p1, p2]
-
-        color = pygame.Color(SUN_BOTTOM)
-        color.a = 50
-
-        pygame.gfxdraw.filled_polygon(display, points, color)
-
-
-def main():
-    """The main loop."""
-
-    display = pygame.display.set_mode(SIZE, pygame.SCALED | pygame.RESIZABLE)
-    clock = pygame.time.Clock()
-    frame = 0
-
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                return
-            elif event.type == pygame.KEYDOWN:
-                if event.key in (pygame.K_q, pygame.K_ESCAPE):
-                    return
-
-        draw(display, frame)
-        pygame.display.update()
-        clock.tick(60)
-        frame += 1
-        print(frame)
+    
+    def chrange(self, x, input_range, output_range):
+        """Map the interval input_range to output_range."""
+        # Linarly map to [0, 1]
+        normalised = (x - input_range[0]) / (input_range[1] - input_range[0])
+        # And back to the output range.
+        return normalised * (output_range[1] - output_range[0]) + output_range[0]
 
 
-if __name__ == "__main__":
-    main()
+    def draw_vertical_lines(self):
+        """Draw vertical lines converging to the sun."""
+
+        # Erase the lower part
+        second_half = pygame.Rect(0, self.screen_height / 2, self.screen_width, self.screen_height / 2)
+        self.screen.fill(self.bg_color, second_half)
+
+        # Vertical lines
+        lines_number = 18
+        for line in range(lines_number):
+            line = self.chrange(line, (0, lines_number - 1), (-pi / 2, pi / 2))
+            angle = self.chrange(sin(line), (-1, 1), (0, pi))
+
+            #line length and center
+            x_length = self.vertical_lines_center[0] + (self.screen_width / 2) * cos(angle)
+            y_length = self.vertical_lines_center[1] + (self.screen_height / 2) * sin(angle)
+
+            segment = second_half.clipline(x_length, y_length, *self.vertical_lines_center)
+            if segment:
+                pygame.draw.line(self.screen, self.lines_color, *segment)
+
+
+    def draw_horizontal_lines(self, time):
+        """Draw moving horizontal lines for the ground."""
+
+        travel_distance = self.screen_height / 2.6
+        frequency = 0.7 # [0 - 0.99]
+        speed = 0.01 # [0.01-1000] fast - static
+        dy = -time / speed % (travel_distance * (1 - frequency)) 
+        
+        for n in range(50):
+            y = self.sun_center[1] + (travel_distance - dy) * (frequency ** n)
+            if y < self.screen_height / 2:
+                break
+            pygame.gfxdraw.hline(self.screen, 0, self.screen_width, round(y),
+                                  self.lines_color)
+        pygame.gfxdraw.hline(self.screen, 0, self.screen_width, 
+                             self.screen_height // 2, self.lines_color)
+
+        
+    def from_polar(self, radius, angle):
+        """Convert polar coordinate with the angle in degrees to a pygame vector."""
+        vector = pygame.Vector2()
+        vector.from_polar((radius, angle))
+        return vector
+
+
+    def draw_sunrays(self, time):
+        """Draw rotating rays originating at the sun's center."""
+
+        ray_width = 4
+        for angle in range(0, 360, ray_width * 2):
+            angle += time / 10
+
+            p1 = self.sun_center + self.from_polar(self.screen_width/1.5, angle)
+            p2 = self.sun_center + self.from_polar(self.screen_width/1.5, angle + ray_width)
+            points = [self.sun_center, p1, p2]
+            
+            color = pygame.Color(self.sun_bottom_color)
+            #transparency
+            color.a = 50
+
+            pygame.gfxdraw.filled_polygon(self.screen, points, color)
+

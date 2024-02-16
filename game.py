@@ -6,25 +6,25 @@ import random
 
 from settings import Settings
 from player import Player
+from background import Background
 
 #initialize pygame
 pygame.init()
 
-
 settings = Settings()
+time = 0 
 
 # Display/Screen surface
 screen = pygame.display.set_mode((settings.screen_width, settings.screen_height))  
 screen_rect = screen.get_rect()
 pygame.display.set_caption('red block vs Dick.exe')
 
-# Creating an instance of a player
+# Creating instances
 player1 = Player(settings, screen)
-
+background = Background(settings, screen)
 
 
 clock = pygame.time.Clock()
-
 
 
 #ground surface and its rect
@@ -143,11 +143,12 @@ lvl_step_number = 10 #10 default
 start_point = player_rect.midright
 end_point = pygame.mouse.get_pos()
 
+
 while True:
     
     """draw all our elements """ 
     """update everything"""
-
+    
     
     #get and check all the events happening in pygame
     for event in pygame.event.get():
@@ -170,11 +171,14 @@ while True:
             elif event.key == pygame.K_SPACE and player_rect.bottom == ground_rect.top and dck_rect.left != screen_rect.right:
                 player_gravity = -15
 
+            elif event.key in (pygame.K_q, pygame.K_ESCAPE):
+                sys.exit()
+
                 
         if event.type == pygame.QUIT:
             #oposite to pygame.init(), and it will be throwing a mistake if there is code after
             #to avoid this error need to import sys module and call exit method
-            pygame.quit()
+            #pygame.quit()
             sys.exit()
 
     if game_active_flag:
@@ -319,7 +323,7 @@ while True:
         #checking if mouse colides with dck_rect (after adding get_pressed it started to work slow)
         if event.type == pygame.MOUSEMOTION:
             mouse_button = pygame.mouse.get_pressed()
-        if mouse_button[0] and dck_rect.collidepoint(event.pos) and not overheat:
+        if mouse_button[0] and dck_rect.collidepoint(mouse_pos) and not overheat:
             dck_size = 20
             #store the x coordinat of dck
             x = dck_rect.x
@@ -400,7 +404,9 @@ while True:
         #draw start text
         screen.blit(text_start, text_start_rect)
         if game_time == 0:
-                       
+
+            background.draw(time)     
+                  
             #draw game name
             screen.blit(text_game, text_game_rect)
             #drawing dck on the start screen
@@ -411,7 +417,11 @@ while True:
             screen.blit(player, player_rect)
             
             #screen.blit(player1.image, player1.rect)
+            
             player1.blitme()
+            #print(background.time)
+            
+    time += 1
 
         
 
@@ -420,5 +430,6 @@ while True:
     pygame.display.update()
     #making while loop run not faster 60 fps appr 1 while loop each 60 ms
     clock.tick(60) # default 60
+
 
  
