@@ -20,8 +20,9 @@ screen_rect = screen.get_rect()
 pygame.display.set_caption('red block vs Dick.exe')
 
 # Creating instances
-player1 = Player(settings, screen)
+
 background = Background(settings, screen)
+player1 = Player(settings, screen, background)
 
 
 clock = pygame.time.Clock()
@@ -264,6 +265,7 @@ while True:
             bonus_live_rect.top = random.randint(bonus_live_rect.height, screen_rect.centery)
             counter_lives += 1
 
+#############
         #drawing charge %
         text_charge = charge_font.render(f'{charge}%', True, 'Black')
         text_charge_rect = text_charge.get_rect()
@@ -405,7 +407,7 @@ while True:
         screen.blit(text_start, text_start_rect)
         if game_time == 0:
 
-            background.draw(time)     
+            background.draw_game_screen(time)     
                   
             #draw game name
             screen.blit(text_game, text_game_rect)
@@ -418,11 +420,13 @@ while True:
             
             #screen.blit(player1.image, player1.rect)
             
-            player1.blitme()
-            #print(background.time)
+            player1.draw(background)
+            
+
+            
             
     time += 1
-
+    print(player_gravity, player_rect.y)
         
 
 
