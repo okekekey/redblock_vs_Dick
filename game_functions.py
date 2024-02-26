@@ -1,14 +1,9 @@
 # fix colision check with rotating block
+# fix end game over screen
 
 import pygame
 import sys
-import math
 
-from settings import Settings
-from background import Background
-from player import Player
-from dick import Dick
-from bonus_live import BonusLive
 
 def check_events(player, dick, settings, background, stats):
     """Respond to keypresses and mnouse events"""

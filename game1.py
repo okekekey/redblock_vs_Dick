@@ -1,4 +1,7 @@
 #make duble flip only for premium users
+# add sound design
+# add main menu (settings (screen size, music), weapons, player (skins, number of backflips), exit)
+# pack my game PyInstaller (for Python applications) or Inno Setup (for creating win installers)
 
 import pygame
 import sys
