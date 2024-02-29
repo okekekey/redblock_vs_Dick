@@ -1,7 +1,3 @@
-# find a good formula for calculating gravity (probably should be correlation with dick heigh)
-#print(player.jump_height, player.rect.height, dick.rect.height)
-
-
 import pygame
 import math
 
@@ -25,20 +21,18 @@ class Player():
         
 
         #creating a player with a surface
-        self.width = settings.screen_width // 20
-        self.height = settings.screen_height // 5
+        self.w_divider = 40
+        self.h_divider = 10
+        settings.calculate_ss_variables(self)
+        
+        self.width = settings.screen_rect.width // self.w_divider # 20
+        self.height = settings.screen_rect.height // self.h_divider # 5
         self.image = pygame.Surface((self.width, self.height),
                                       pygame.SRCALPHA) #needs to make a proper rotation
         self.image.fill('Red')
         self.rect = self.image.get_rect()
 
-
-        # Gravity and jumping
-        self.ground_flag = False
-        self.gravity = 0 
-        self.jump_height = int(self.height * .11) #fckn hard to balance for different screen sizes
-
-        # Weapon rotation
+        # rotation
         self.rotation_angle = 0
         self.image_copy = self.image.copy()
         self.image_rotated = pygame.transform.rotate(self.image_copy,
@@ -46,60 +40,105 @@ class Player():
         self.rotated_rect = self.image_rotated.get_rect()
         self.rotated_rect.center = self.rect.center
 
-        # Charge
-        self.overheat_event = False
-        self.ammo_charge = 100
-        self.discharge_speed = 1
-        self.charge_speed = 2
-        self.overheating = False
-        self.recharge_delay = 0
-        self.recharge_delay_max = 120 # def 120 - 2 sec
+        # Gravity and jumping
+        self.ground_flag = False
+        self.gravity = 0 
 
-        self.gun_laser()
-        
+
+
+
+        #self.gun_laser()
+
+    # def calculate_size(self, settings):
+    #     """Calculate player sizes, jump heigh and speed of the dick based on the screen size"""
+    #     # player width
+    #     if settings.screen_rect.width > settings.screen_sizes[1][0]: #1920
+    #         self.w_divider = 40
+    #     elif settings.screen_rect.width > settings.screen_sizes[2][0]: #1600
+    #         self.w_divider = 35
+    #     elif settings.screen_rect.width > settings.screen_sizes[3][0]: #1366
+    #         self.w_divider = 30
+    #     elif settings.screen_rect.width > settings.screen_sizes[4][0]: #1366
+    #         self.w_divider = 25
+    #     elif settings.screen_rect.width > settings.screen_sizes[5][0]: #1024
+    #         self.w_divider = 22
+    #     elif settings.screen_rect.width < settings.screen_sizes[5][0]: #1024
+    #         self.w_divider = 20
+    #     # player height
+    #     if settings.screen_rect.height > settings.screen_sizes[1][1]: #1080
+    #         self.h_divider = 10
+    #     elif settings.screen_rect.height > settings.screen_sizes[2][1]: #900
+    #         self.h_divider = 9
+    #     elif settings.screen_rect.height > settings.screen_sizes[3][1]: #768
+    #         self.h_divider = 8
+    #     elif settings.screen_rect.height > settings.screen_sizes[4][1]: #720
+    #         self.h_divider = 8
+    #     elif settings.screen_rect.height > settings.screen_sizes[5][1]: #576
+    #         self.h_divider = 7
+    #     elif settings.screen_rect.height < settings.screen_sizes[5][1]: #576
+    #         self.h_divider = 6
+    #     # jump height
+    #     if settings.screen_rect.height > settings.screen_sizes[1][1]: #1080
+    #         self.jump_height = 26
+    #     elif settings.screen_rect.height > settings.screen_sizes[2][1]: #900
+    #         self.jump_height = 23
+    #     elif settings.screen_rect.height > settings.screen_sizes[3][1]: #768
+    #         self.jump_height = 21
+    #     elif settings.screen_rect.height > settings.screen_sizes[4][1]: #720
+    #         self.jump_height = 21
+    #     elif settings.screen_rect.height > settings.screen_sizes[5][1]: #576
+    #         self.jump_height = 19
+    #     elif settings.screen_rect.height > 450: #450
+    #         self.jump_height = 18
+    #     elif settings.screen_rect.height > 350: #350
+    #         self.jump_height = 17
+    #     elif settings.screen_rect.height < 350: #350
+    #         self.jump_height = 16
+    #     # game speed
+
+    def resize(self, settings, background):
+        """Reajust player size based on the screen size"""
+        self.screen = settings.screen
+        self.screen_rect = self.screen.get_rect()   
+
+        settings.calculate_ss_variables(self)
+        self.width = settings.screen_rect.width // self.w_divider # 20
+        self.height = settings.screen_rect.height // self.h_divider # 5
+        self.image = pygame.Surface((self.width, self.height),
+                                      pygame.SRCALPHA) 
+        self.image.fill('Red')
+        self.rect = self.image.get_rect()
+        self.place(background)
+
+    
+    def rotated_resize(self, settings, background):
+        """Reajust player size based on the screen size"""
+        self.screen = settings.screen
+        self.screen_rect = self.screen.get_rect()   
+
+        self.rotation_angle = 0
+        self.image_copy = self.image.copy()
+        self.image_rotated = pygame.transform.rotate(self.image_copy,
+                                                           -self.rotation_angle)
+        self.rotated_rect = self.image_rotated.get_rect()
+        self.rotated_rect.center = self.rect.center
+        self.place(background)
+
     def place(self, background):
         """Position the dick on the screen"""
-        self.rect.bottomleft = background.ground_rect.topleft
-        self.rect.x += self.rect.width * 3 # need to adjust if using png       
+        self.rect.midbottom = (self.rect.width * 5, background.ground_rect.top)       
             
-    def draw(self, background):
+    def draw(self, background, guns):
         """Draw the player to the screen"""
         if self.rect.bottom == background.ground_rect.top:
             self.screen.blit(self.image, self.rect)
+            self.rotated_rect = self.rect # to avoid wrong collision detection with the dick
         else:
             self.screen.blit(self.image_rotated, self.rotated_rect)
         
-        self.gun_laser()
+        #guns.laser(self)
 
-    def calculate_aim_angle(self):
-        """Calculate the angele between player center and mouse pos to aim the gun"""
-        mouse_pos = pygame.mouse.get_pos()
-        self.angle = 360 - math.atan2(mouse_pos[1] - self.rect.centery, mouse_pos[0] - self.rect.centerx) * 180 / math.pi
-
-    def gun_laser(self):
-        """Make a surface of a laser gun and make a mask for it to rotate properly"""
-        self.calculate_aim_angle()
-
-        # Create a surface for the laser gun
-        gun_length = self.height # 2 times shorter because of the mask
-        gun_height = self.width // 4
-        gun_surface = pygame.Surface((gun_length, gun_height), pygame.SRCALPHA)
-        
-        gun_surface.fill('Black')
-
-        # Creating a mask for the left half of the gun
-        self.half_gun_surface = pygame.Surface((gun_length / 2, gun_height), pygame.SRCALPHA)
-        # Fill the left half with an opaque color
-        #self.half_gun_surface.fill((0, 0, 0, 0))  
-        # Apply the mask to the gun surface
-        gun_surface.blit(self.half_gun_surface, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
-
-        # Rotate the gun surface
-        self.gun_rotated = pygame.transform.rotate(gun_surface, self.angle)
-        self.gun_rect = self.gun_rotated.get_rect(center=self.rect.center) 
-        """problem is that after rotating i getting a new rect and midright points chnages, it doesnt anchor to the surface"""
-
-        self.screen.blit(self.gun_rotated, self.gun_rect)
+    
 
 
 

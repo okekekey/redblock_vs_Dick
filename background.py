@@ -1,5 +1,6 @@
 #https://ddorn.gitlab.io/post/2021-04-01-creating-a-retro-sunset-with-pygame/
 #add mountains to the sides like hd pics maybe
+#increase speed of background with lvl increase
 
 import pygame
 import pygame.gfxdraw
@@ -14,13 +15,13 @@ class Background():
     
     def __init__(self, settings) -> None:
         """Initialize all elements of background"""
-        self.settings = settings
+        
         self.screen = settings.screen 
         self.screen_rect = self.screen.get_rect() 
 
         # screen size
-        self.screen_width = settings.screen_width
-        self.screen_height = settings.screen_height
+        self.screen_width = settings.screen_rect.width
+        self.screen_height = settings.screen_rect.height
 
         # colors for gradient effects
         self.sun_top_color = pygame.Color(255, 218, 69)
@@ -50,8 +51,9 @@ class Background():
         self.show_text = True
         self.blink_event = pygame.USEREVENT+11
         pygame.time.set_timer(self.blink_event, self.blink_interval)
-
+        
         self.draw_ground()
+        self.indent()
 
     def draw_pause_screen(self, time, settings, stats):
         """Draw selekted parts to the display."""
@@ -63,6 +65,7 @@ class Background():
         self.draw_vertical_lines()
         #self.draw_horizontal_lines(time)
         self.draw_horizontal_lines_freezed()
+        self.draw_ground()
         # Texts
         self.draw_game_name()
         self.draw_game_over(settings)
@@ -70,7 +73,6 @@ class Background():
         self.draw_score(settings)
         self.draw_high_score(settings, stats)
         self.draw_pause(settings)
-        #self.draw_pause(settings)
           
     def draw_game_screen(self, time, settings, stats):
         """Draw selekted parts to the display."""
@@ -87,9 +89,30 @@ class Background():
         self.draw_high_score(settings, stats)
         self.draw_timer(settings)
         self.draw_game_over(settings)
+
+    def resize(self, settings):
+        """Resize background according to the screen size"""
+        self.screen = settings.screen 
+        self.screen_rect = self.screen.get_rect() 
+
+        self.screen_width = self.screen_rect.width
+        self.screen_height = self.screen_rect.height
+
+        # sun settings
+        self.sun_band_height = 7
+        self.sun_radius = self.screen_height // 25
+        self.sun_center = pygame.Vector2(self.screen_width / 2, 
+                                         self.screen_height * 0.46 // self.sun_band_height * self.sun_band_height) # idk why so complcted
+        # sky settings
+        self.sky_band_height = self.screen_height // 50
+        self.stars_number = self.screen_height // 100
+
+        # line settings 
+        self.vertical_lines_center = self.sun_center.copy()
+        self.vertical_lines_center[1] = self.sun_center[1] + self.sun_radius
         
-        
-               
+        self.indent()
+                           
     def draw_sky(self):
         """Draw the sky gradient band by band."""
         top = self.sky_top_color
@@ -117,6 +140,7 @@ class Background():
 
     def draw_sun(self):
         """Draw a sun with a gradient and some stripes."""
+
         top = self.sun_top_color
         bottom = self.sun_bottom_color
         # We add one to make sure the borders of the sun are not cropped
@@ -244,96 +268,80 @@ class Background():
         self.screen.blit(self.ground2, self.ground2_rect)
 
 ## TEXTS
-# try to make class Texts
-        
+    
+    def indent(self):
+        """Creates screen indentation to attach UI to it"""
+        self.left_indent = self.screen_rect.width // 100
+        self.top_indent = self.screen_rect.height // 50
+        self.width_indent = self.screen_rect.width - self.left_indent * 2
+        self.length_indent = self.screen_rect.height - self.top_indent * 2
+        self.screen_indent_rect = pygame.Rect(self.left_indent, self.top_indent, self.width_indent, self.length_indent)
+        #self.surface_indent = pygame.Surface((self.width_indent, self.length_indent))  
+
+    def draw_text(self, text, size, color):
+        """function to help text creation quicker"""
+        self.font = pygame.font.SysFont('Unispace', size)
+        self.text = self.font.render(text, True, color)
+        self.text_rect = self.text.get_rect()
+    
     def draw_game_name(self):
         """Draw game name on the first screen"""
-        game_name_font = pygame.font.SysFont('Unispace', 
-                                             self.screen_rect.width // 10)
-        text_game_name = game_name_font.render('Red Block vs Richard!', True, 'Pink')
-        text_game_name_rect = text_game_name.get_rect()
-        text_game_name_rect.center = (self.screen_rect.centerx, 
+        self.draw_text('Red Block vs Richard!', self.screen_rect.width // 10, 'Pink')
+        self.text_rect.center = (self.screen_rect.centerx, 
                                       self.screen_rect.centery)
-        self.screen.blit(text_game_name, text_game_name_rect)
+        self.screen.blit(self.text, self.text_rect)
 
     def draw_lives(self, settings):
         """Displays lives left"""
-        lives_font = pygame.font.SysFont('Unispace', 
-                                             self.screen_rect.width // 50)
-        text_lives = lives_font.render(f'Lives: {settings.current_lives}', True, 'White')
-        text_lives_rect = text_lives.get_rect()
-        text_lives_rect.topleft = (settings.screen_indent_rect.x, settings.screen_indent_rect.y)
-        self.screen.blit(text_lives, text_lives_rect)
+        self.draw_text(f'Lives: {settings.current_lives}', self.screen_rect.width // 50, 'White')
+        self.text_rect.topleft = (self.screen_indent_rect.x, self.screen_indent_rect.y)
+        self.screen.blit(self.text, self.text_rect)
         
     def draw_score(self, settings):
         """Displays score"""
-        # increase_score(player, dick, settings)
-        score_font = pygame.font.SysFont('Unispace', 
-                                             self.screen_rect.width // 50)
-        text_score = score_font.render(f'Score: {settings.current_score}', True, 'White')
-        text_score_rect = text_score.get_rect()
-        text_score_rect.topright = (settings.screen_indent_rect.right, settings.screen_indent_rect.y)
-        self.screen.blit(text_score, text_score_rect)     
+        self.draw_text(f'Score: {settings.current_score}', self.screen_rect.width // 50, 'White')
+        self.text_rect.topright = (self.screen_indent_rect.right, self.screen_indent_rect.y)
+        self.screen.blit(self.text, self.text_rect)   
         
     def draw_high_score(self, settings, stats):
         """Displays high score"""
-        high_score_font = pygame.font.SysFont('Unispace', 
-                                             self.screen_rect.width // 70)
-        text_high_score = high_score_font.render(f'High Score: {stats.high_score}', True, 'DarkGrey')
-        text_high_score_rect = text_high_score.get_rect()
-        text_high_score_rect.topright = (settings.screen_indent_rect.right, settings.screen_indent_rect.y + text_high_score_rect.height * 2)
-        self.screen.blit(text_high_score, text_high_score_rect)
+        self.draw_text(f'High Score: {stats.high_score}', self.screen_rect.width // 70, 'DarkGrey')
+        self.text_rect.topright = (self.screen_indent_rect.right, self.screen_indent_rect.y + self.text_rect.height * 2)
+        self.screen.blit(self.text, self.text_rect)
 
     def draw_timer(self, settings):
         """Display play time"""
-        
-        timer_font = pygame.font.SysFont('Unispace', 
-                                             self.screen_rect.width // 40)
-        text_timer = timer_font.render(f':{int(settings.get_play_time()/1000)}', True, 'White')
-        text_timer_rect = text_timer.get_rect()
-        text_timer_rect.midtop = (settings.screen_indent_rect.centerx, settings.screen_indent_rect.y)
-        self.screen.blit(text_timer, text_timer_rect)
-    # maybe after g.o. make dick run with super speed and or smth like siple animation    
+        self.draw_text(f':{int(settings.get_play_time()/1000)}', self.screen_rect.width // 40, 'White')
+        self.text_rect.midtop = (self.screen_indent_rect.centerx, self.screen_indent_rect.y)
+        self.screen.blit(self.text, self.text_rect)
+# my dick sucks music
     def draw_game_over(self, settings):
         """Draw game over screen"""
-        # increase_score(player, dick, settings)
-        if settings.current_lives < 0:    
-            game_over_font = pygame.font.SysFont('Unispace', 
-                                             self.screen_rect.width // 10)
-            text_game_over = game_over_font.render(f'Game over', True, 'Red')
-            text_game_over_rect = text_game_over.get_rect()
-            text_game_over_rect.center = (self.screen_rect.centerx, 
+        if settings.current_lives < 1:   
+            self.draw_text(f'GAME OVER', self.screen_rect.width // 10, 'Red') 
+            self.text_rect.center = (self.screen_rect.centerx, 
                                       self.screen_rect.centery)
             self.screen.fill('Pink')
-            self.screen.blit(text_game_over, text_game_over_rect)
+            self.screen.blit(self.text, self.text_rect)
         
     def draw_pause(self, settings):
         """Draw pause text when paused and make it blink"""
         if self.show_text:
-            pause_font = pygame.font.SysFont('Unispace', 
-                                                self.screen_rect.width // 50)
-            text_pause = pause_font.render('PAUSED', True, 'White')
-            text_pause_rect = text_pause.get_rect()
-            text_pause_rect.midtop = (settings.screen_indent_rect.centerx, settings.screen_indent_rect.y)
-            self.screen.blit(text_pause, text_pause_rect)
+            self.draw_text('PAUSED', self.screen_rect.width // 50, 'White')
+            self.text_rect.midtop = (self.screen_indent_rect.centerx, self.screen_indent_rect.y)
+            self.screen.blit(self.text, self.text_rect)
         
     def draw_dick_hp(self, dick):
         """Draw dick hp"""
-        dick_hp_font = pygame.font.SysFont('Unispace', 
-                                             self.screen_rect.width // 50)
-        text_dick_hp = dick_hp_font.render(f'{dick.health}%', True, 'White')
-        text_dick_hp_rect = text_dick_hp.get_rect()
-        text_dick_hp_rect.midbottom = dick.rect.midtop
-        self.screen.blit(text_dick_hp, text_dick_hp_rect)
+        self.draw_text(f'{dick.health}%', self.screen_rect.width // 50, 'White')
+        self.text_rect.midbottom = dick.rect.midtop
+        self.screen.blit(self.text, self.text_rect)
 
-    def draw_ammo_charge(self, player):
+    def draw_ammo_charge(self, guns):
         """Draw % of charge ammo"""
-        ammo_font = pygame.font.SysFont('Unispace', 
-                                             self.screen_rect.width // 50)
-        text_ammo = ammo_font.render(f'{player.ammo_charge}%', True, 'White')
-        text_ammo_rect = text_ammo.get_rect()
-        text_ammo_rect.center = player.gun_rect.topright
-        self.screen.blit(text_ammo, text_ammo_rect)
+        self.draw_text(f'{guns.ammo_charge}%', self.screen_rect.width // 50, 'White')
+        self.text_rect.center = guns.rect.topright
+        self.screen.blit(self.text, self.text_rect)
            
 
 

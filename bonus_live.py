@@ -12,7 +12,7 @@ class BonusLive():
         self.screen = settings.screen
         self.screen_rect = self.screen.get_rect()
 
-        self.spawn_rate = self.screen_rect.width * 10 #default 10
+        self.spawn_rate = self.screen_rect.width * 1 #default 10
 
         # creating bonus live with an image
         self.image_name = 'images\heart.png'
@@ -24,14 +24,14 @@ class BonusLive():
     def choose_scale(self, settings):
         """Pick the image scale according to the flag"""
         self.image_copy = pygame.transform.scale(self.image_copy,
-                                             (settings.screen_width // 25, settings.screen_height // 15))
+                                             (settings.screen_rect.width // 25, settings.screen_rect.height // 15))
 
     def load_image(self, settings):
         """Loade image"""
         self.image = pygame.image.load(self.image_name)
         self.image_copy = self.image.copy()
         self.choose_scale(settings)
-        self.image_copy.convert_alpha()
+        #self.image_copy.convert_alpha()
         self.rect = self.image_copy.get_rect()
 
     # def drop_flag(self):
@@ -46,6 +46,16 @@ class BonusLive():
     def reset(self):
         """Reset flags and images for new run"""
         self.place_postion()
+
+    def bonus_live_resize(self, settings):
+        """Resize BL based on the screen size and place it randomly again"""
+        # store postion
+        midbottom = self.rect.midbottom
+        self.load_image(settings)
+        self.spawn_rate = self.screen_rect.width * 1 #default 10
+        self.place_postion()
+        # restore position
+        self.rect.midbottom = midbottom
     
     def draw(self):
         """Draw the Dick to the screen"""

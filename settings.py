@@ -11,30 +11,23 @@ class Settings():
         # getting user screen width and height
         self.desktop_size = pygame.display.get_desktop_sizes()
         for tuple in self.desktop_size:
-               self.screen_width = tuple[0]
-               self.screen_height = tuple[1]
+               self.monitor_width = tuple[0]
+               self.monitor_height = tuple[1]
+
+        self.screen_sizes = [(2560, 1440), (1920, 1080), (1600, 900), (1366, 768), (1280, 720), (1024, 576), (350, 200)]
 
         # Creating screen surface
-        self.screen = pygame.display.set_mode((2400, 1200)) 
+        self.screen = pygame.display.set_mode(self.screen_sizes[5], pygame.RESIZABLE) 
         self.screen_rect = self.screen.get_rect()
         pygame.display.set_caption('red block vs Dick.exe')
-
-        # Screen indentaion for interface
-        self.left_indent = self.screen_rect.width // 100
-        self.top_indent = self.screen_rect.height // 50
-        self.width_indent = self.screen_rect.width - self.left_indent * 2
-        self.length_indent = self.screen_rect.height - self.top_indent * 2
-        self.screen_indent_rect = pygame.Rect(self.left_indent, self.top_indent, self.width_indent, self.length_indent)
-
-        #self.surface_indent = pygame.Surface((self.width_indent, self.length_indent))
-    
         
         # game start flags
-        self.game_started_flag = False
-        self.game_active_flag = False
+        self.game_started_flag = False # true when firts pressed space
+        self.game_active_flag = False # truen when game is running
+        self.game_over_flag = False
 
         # speed
-        self.start_speed = self.screen_width // 256 #10 default
+        self.start_speed = 10 #self.monitor_width // 256 #10 default
         self.lvl_speed = self.start_speed
         self.lvl_speed_step = 1 #10 default
 
@@ -61,6 +54,66 @@ class Settings():
         self.dick_kill_flag = False # for killing dick
 
         self.initialize_dynamic_settings()
+
+    def calculate_ss_variables(self, player):
+        """Calculate player size, jump heigh, dick size and speed of the game based on the game window size"""
+        # player width
+        if self.screen_rect.width > self.screen_sizes[1][0]: #1920
+            player.w_divider = 40
+        elif self.screen_rect.width > self.screen_sizes[2][0]: #1600
+            player.w_divider = 35
+        elif self.screen_rect.width > self.screen_sizes[3][0]: #1366
+            player.w_divider = 30
+        elif self.screen_rect.width > self.screen_sizes[4][0]: #1280
+            player.w_divider = 25
+        elif self.screen_rect.width > self.screen_sizes[5][0]: #1024
+            player.w_divider = 22
+        elif self.screen_rect.width < self.screen_sizes[5][0]: #1024
+            player.w_divider = 20
+        # player height
+        if self.screen_rect.height > self.screen_sizes[1][1]: #1080
+            player.h_divider = 10
+        elif self.screen_rect.height > self.screen_sizes[2][1]: #900
+            player.h_divider = 9
+        elif self.screen_rect.height > self.screen_sizes[3][1]: #768
+            player.h_divider = 8
+        elif self.screen_rect.height > self.screen_sizes[4][1]: #720
+            player.h_divider = 8
+        elif self.screen_rect.height > self.screen_sizes[5][1]: #576
+            player.h_divider = 7
+        elif self.screen_rect.height > self.screen_sizes[6][1]: #576
+            player.h_divider = 6
+        # jump height
+        if self.screen_rect.height > self.screen_sizes[1][1]: #1080
+            player.jump_height = 26
+        elif self.screen_rect.height > self.screen_sizes[2][1]: #900
+            player.jump_height = 23
+        elif self.screen_rect.height > self.screen_sizes[3][1]: #768
+            player.jump_height = 21
+        elif self.screen_rect.height > self.screen_sizes[4][1]: #720
+            player.jump_height = 21
+        elif self.screen_rect.height > self.screen_sizes[5][1]: #576
+            player.jump_height = 19
+        elif self.screen_rect.height > 450: #450
+            player.jump_height = 18
+        elif self.screen_rect.height > 350: #350
+            player.jump_height = 17
+        # game speed
+        if self.screen_rect.width > self.screen_sizes[1][0]: #1920
+            self.lvl_speed = self.screen_rect.width // 200
+        elif self.screen_rect.width > self.screen_sizes[2][0]: #1600
+            self.lvl_speed = self.screen_rect.width // 170
+        elif self.screen_rect.width > self.screen_sizes[3][0]: #1366
+            self.lvl_speed = self.screen_rect.width // 140
+        elif self.screen_rect.width > self.screen_sizes[4][0]: #1280
+            self.lvl_speed = self.screen_rect.width // 120
+        elif self.screen_rect.width > self.screen_sizes[5][0]: #1024
+            self.lvl_speed = self.screen_rect.width // 100
+        elif self.screen_rect.width > 600: 
+            self.lvl_speed = self.screen_rect.width // 80
+        elif self.screen_rect.width > self.screen_sizes[6][0]: #350
+            self.lvl_speed = self.screen_rect.width // 70
+
 
     def initialize_dynamic_settings(self):
         """Initialize settings that change throughout the game"""

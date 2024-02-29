@@ -14,8 +14,8 @@ class Dick():
         self.small_dick_flag = False
         self.image_thanos = 'images\Richard.png'
         self.image_kirby = 'images\Small_Richard.png'
-        self.load_image(settings)
         
+        self.load_image(settings)
         self.initial_postion(background)
    
         self.health = 100
@@ -26,7 +26,7 @@ class Dick():
         #                               pygame.SRCALPHA) #needs to make a proper rotation
         # self.image.fill('Pink')
         # self.rect = self.image.get_rect()
-
+        self.resize(settings, background)
 
     def choose_image(self):
         """Pick the image according to the flag"""
@@ -39,10 +39,11 @@ class Dick():
         """Pick the image scale according to the flag"""
         if not self.small_dick_flag:
             self.image_copy = pygame.transform.scale(self.image_copy,
-                                             (settings.screen_width // 20, settings.screen_height // 10))
+                                             (settings.screen_rect.width // 20, settings.screen_rect.height // 10))
         else:    
             self.image_copy = pygame.transform.scale(self.image_copy,
-                                             (settings.screen_width // 25, settings.screen_height // 15))
+                                             (settings.screen_rect.width // 25, settings.screen_rect.height // 15))
+        self.rect = self.image_copy.get_rect()
 
     def load_image(self, settings):
         """Loade image"""
@@ -50,18 +51,16 @@ class Dick():
         self.image = pygame.image.load(self.image_name)
         self.image_copy = self.image.copy()
         self.choose_scale(settings)
-        self.image_copy.convert_alpha()
-        self.image_copy.set_colorkey('White')
-        self.rect = self.image_copy.get_rect()
-
+        #self.image_copy.convert_alpha()
+        #self.image_copy.set_colorkey('White')
+        
     def drop_flag(self):
         """Drop small_dick_flag back to False"""
         self.small_dick_flag = False
         
     def initial_postion(self, background):
         """1st position of the dick on the screen"""
-        self.rect.bottomright = background.ground_rect.topright
-        self.rect.x -= self.rect.width * 4 # need to adjust if using png
+        self.rect.midbottom = (background.ground_rect.right - self.rect.width * 4, background.ground_rect.top)
 
     def replace(self, settings, background):
         """Reposition dick to the right of the screen"""
@@ -71,6 +70,20 @@ class Dick():
     def reset_hp(self):
         """Reset dick HP"""
         self.health = 100
+
+    def resize(self, settings, background):
+        """Reajust dick size based on the screen size"""
+        # store postion
+        if settings.game_active_flag:
+            midbottom = self.rect.midbottom
+
+        
+        self.load_image(settings)
+        self.initial_postion(background)
+
+        # restore position
+        if settings.game_active_flag:
+            self.rect.midbottom = midbottom
 
     def reset(self, settings, background):
         """Reset flags and images for new run"""
