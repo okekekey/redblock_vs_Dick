@@ -1,6 +1,8 @@
 #add scalable screen size
 
 import pygame.display
+import json
+import os.path
 
 class Settings():
     """A class to store all setting to the red block vs dick game"""
@@ -17,7 +19,8 @@ class Settings():
         self.screen_sizes = [(2560, 1440), (1920, 1080), (1600, 900), (1366, 768), (1280, 720), (1024, 576), (350, 200)]
 
         # Creating screen surface
-        self.screen = pygame.display.set_mode(self.screen_sizes[5], pygame.RESIZABLE) 
+        # self.screen = pygame.display.set_mode(self.screen_sizes[5], pygame.RESIZABLE) 
+        self.load_settings()
         self.screen_rect = self.screen.get_rect()
         pygame.display.set_caption('red block vs Dick.exe')
         
@@ -27,7 +30,7 @@ class Settings():
         self.game_over_flag = False
 
         # speed
-        self.start_speed = 10 #self.monitor_width // 256 #10 default
+        self.start_speed = 0 #self.monitor_width // 256 #10 default
         self.lvl_speed = self.start_speed
         self.lvl_speed_step = 1 #10 default
 
@@ -52,6 +55,9 @@ class Settings():
         self.high_score = 0
         self.dick_pass_flag = False # for jumping over
         self.dick_kill_flag = False # for killing dick
+
+        # Sound
+        self.sound_flag = True
 
         self.initialize_dynamic_settings()
 
@@ -99,20 +105,20 @@ class Settings():
         elif self.screen_rect.height > 350: #350
             player.jump_height = 17
         # game speed
-        if self.screen_rect.width > self.screen_sizes[1][0]: #1920
-            self.lvl_speed = self.screen_rect.width // 200
-        elif self.screen_rect.width > self.screen_sizes[2][0]: #1600
-            self.lvl_speed = self.screen_rect.width // 170
-        elif self.screen_rect.width > self.screen_sizes[3][0]: #1366
-            self.lvl_speed = self.screen_rect.width // 140
-        elif self.screen_rect.width > self.screen_sizes[4][0]: #1280
-            self.lvl_speed = self.screen_rect.width // 120
-        elif self.screen_rect.width > self.screen_sizes[5][0]: #1024
-            self.lvl_speed = self.screen_rect.width // 100
-        elif self.screen_rect.width > 600: 
-            self.lvl_speed = self.screen_rect.width // 80
-        elif self.screen_rect.width > self.screen_sizes[6][0]: #350
-            self.lvl_speed = self.screen_rect.width // 70
+        # if self.screen_rect.width > self.screen_sizes[1][0]: #1920
+        #     self.lvl_speed = self.screen_rect.width // 200
+        # elif self.screen_rect.width > self.screen_sizes[2][0]: #1600
+        #     self.lvl_speed = self.screen_rect.width // 170
+        # elif self.screen_rect.width > self.screen_sizes[3][0]: #1366
+        #     self.lvl_speed = self.screen_rect.width // 140
+        # elif self.screen_rect.width > self.screen_sizes[4][0]: #1280
+        #     self.lvl_speed = self.screen_rect.width // 120
+        # elif self.screen_rect.width > self.screen_sizes[5][0]: #1024
+        #     self.lvl_speed = self.screen_rect.width // 100
+        # elif self.screen_rect.width > 600: 
+        #     self.lvl_speed = self.screen_rect.width // 80
+        # elif self.screen_rect.width > self.screen_sizes[6][0]: #350
+        #     self.lvl_speed = self.screen_rect.width // 70
 
 
     def initialize_dynamic_settings(self):
@@ -148,6 +154,30 @@ class Settings():
 
 
 
+    def load_settings(self):
+        """Load game settings from the file"""
+        if os.path.exists('settings.json'):
+            with open('settings.json', 'r') as settings_file:
+                loaded_settings = json.load(settings_file)
+                # screen size
+                screen_size = loaded_settings['screen_size']
+                self.screen = pygame.display.set_mode(screen_size, pygame.RESIZABLE) 
+                # sound
+                sound_enabled = loaded_settings['sound_enabled']
+                self.sound_flag = sound_enabled
+                #difficulty = loaded_settings["difficulty"]
+        else:
+            # start with def settings if there is no settings file
+            with open('settings.json', 'w') as settings_file:
+                self.screen = pygame.display.set_mode(self.screen_sizes[5], pygame.RESIZABLE) 
+                self.sound_flag = True
 
-        
-        
+    def save_settings(self):
+        """Save game settings to the file"""
+        # create a settings dictionary
+        self.settings_dict = {'screen_size' : self.screen_rect[2:4], 'sound_enabled' : self.sound_flag}
+        # serialize settings to json
+        settings_json = json.dumps(self.settings_dict)
+        # Save to a file
+        with open('settings.json', 'w') as settings_file:
+            settings_file.write(settings_json)

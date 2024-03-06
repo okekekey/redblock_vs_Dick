@@ -1,12 +1,15 @@
 import pygame
 import sys
+import math
+from bullets import Bullets
 
 
-def check_events(player, dick, settings, background, stats, bonus_live, guns):
+def check_events(player, dick, settings, background, stats, bonus_live, guns, menu):
     """Respond to keypresses and mnouse events"""
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             stats.save_high_score(settings)
+            settings.save_settings()
             sys.exit()
         # screen resize
         elif event.type == pygame.VIDEORESIZE:
@@ -17,7 +20,7 @@ def check_events(player, dick, settings, background, stats, bonus_live, guns):
             settings.screen = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
             settings.screen_rect = settings.screen.get_rect()
             #settings.calculate_ss_variables(player)
-            resize(settings, background, player, dick, bonus_live)
+            resize(settings, background, player, dick, bonus_live, menu)
 
 
             # if not settings.game_active_flag:     
@@ -26,31 +29,50 @@ def check_events(player, dick, settings, background, stats, bonus_live, guns):
                                    
         # jumping
         elif event.type == pygame.KEYDOWN:
-            check_keydown_events(event, player, settings, background, stats, guns) 
+            check_keydown_events(event, player, settings, background, stats, guns, menu) 
         # when paused make it blink
         elif event.type == background.blink_event:
             background.show_text = not background.show_text
                            
-def check_keydown_events(event, player, settings, background, stats, guns):
+def check_keydown_events(event, player, settings, background, stats, guns, menu):
     """Respond to keypresses"""
     #space, esc, q, p
-    if event.key == pygame.K_SPACE:
+    if event.key == pygame.K_SPACE and menu.current_status != menu.all_states[2]:
         
         player_jump(player, background)
         player.ground_flag = False
         settings.game_started_flag = True
         settings.game_active_flag = True
-        
+        menu.current_status = menu.all_states[0]
+          
         settings.get_pause_end()
         #sounds.moving(ship)
         # if dck_rect.x == 650 or dck_rect.left == screen_rect.right:
         #   start_time = pygame.time.get_ticks()
 
-    elif event.key in (pygame.K_q, pygame.K_ESCAPE):
+    elif event.key == pygame.K_q:
         stats.save_high_score(settings)
+        settings.save_settings()
         sys.exit()
 
-    #pause and unpause
+    # menu
+    elif event.key == pygame.K_ESCAPE and menu.current_status == menu.all_states[0]:
+        settings.game_active_flag = False
+        settings.get_pause_start()
+        menu.current_status = menu.all_states[1]
+    elif event.key == pygame.K_ESCAPE and menu.current_status == menu.all_states[1] and settings.game_started_flag == True:
+        settings.game_active_flag = True
+        settings.get_pause_end()
+        menu.current_status = menu.all_states[0]
+    # go back
+    elif event.key == pygame.K_ESCAPE and menu.current_status == menu.all_states[2]:
+        menu.current_status = menu.all_states[1]
+    # game not started
+    elif event.key == pygame.K_ESCAPE and menu.current_status == menu.all_states[1]:
+        menu.current_status = menu.all_states[0]
+
+              
+    # pause and unpause
     elif event.key == pygame.K_p and settings.game_active_flag == True:
         settings.game_active_flag = False
         settings.get_pause_start()  
@@ -62,13 +84,14 @@ def check_keydown_events(event, player, settings, background, stats, guns):
         change_weapon(guns, event)
 
 
-def resize(settings, background, player, dick, bonus_live):
+def resize(settings, background, player, dick, bonus_live, menu):
     """Resizes and rearranges elements after changing screen size"""
     background.resize(settings)
     player.resize(settings, background)
     player.rotated_resize(settings, background)
     dick.resize(settings, background)
     bonus_live.bonus_live_resize(settings)
+    menu.resize(settings, player)
 
 def reset_timers(settings):
     """Reset timers"""
@@ -114,46 +137,12 @@ def update_player(player, background, dick, settings, guns):
         player.rotated_rect = player.image_rotated.get_rect()
         player.rotated_rect.center = player.rect.center
     #weapon ammo/charge
-    discharge_charge_weapon(player, guns)
+    guns.discharge_charge_weapon()
 
 def player_jump(player, background):
     """Make player to jump"""
     if player.rect.bottom == background.ground_rect.top and player.ground_flag == True:
         player.gravity = - player.jump_height
-
-def discharge_charge_weapon(player, guns):
-    """Unload and reload weapon"""
-    overheating(guns)
-    overheat_cooldown(guns)
-    mouse_button_pressed = pygame.mouse.get_pressed()
-    if mouse_button_pressed[0] and guns.ammo_charge >= 0 and not guns.overheating:
-        guns.ammo_charge -= guns.discharge_speed
-    elif guns.ammo_charge < 100 and guns.recharge_delay == 0:
-        guns.ammo_charge += guns.charge_speed
-    elif guns.ammo_charge > 100:
-        guns.ammo_charge = 100
-    
-def overheating(guns):
-    """Checks if a weapon is overheated"""
-    if guns.ammo_charge < 0:
-        guns.overheating = True
-        guns.recharge_delay = guns.recharge_delay_max
-        guns.ammo_charge = 0 # need to assigne to stop dead loop
-
-def overheat_cooldown(guns):
-    """Delays reloading weapon when overheated"""
-    if guns.recharge_delay > 0:
-        guns.recharge_delay -= 1
-    elif guns.recharge_delay == 0:
-        guns.overheating = False 
-
-def shoot_laser(settings, guns):
-    """Draw laser beam """
-    mouse_pos = pygame.mouse.get_pos()
-    mouse_button_pressed = pygame.mouse.get_pressed()
-    if mouse_button_pressed[0] and not guns.overheating:
-        pygame.draw.line(settings.screen, 'Red', guns.rect.center,
-                          mouse_pos, 3)
 
 def update_dick(player, dick, settings, background, guns):
     """Update the Dick position on the screen"""
@@ -167,7 +156,7 @@ def update_dick(player, dick, settings, background, guns):
     increase_speed_level(settings)
     dicrease_hp_dick(dick, player, settings, background, guns)
     dick_check_hp(dick, settings, background)
-    dick_change_imager(dick, settings, background)
+    dick_change_image(dick, settings, background)
     game_over(settings)
     
 def dick_transfer(dick, settings, background):
@@ -201,12 +190,13 @@ def game_over(settings):
         else:
             settings.lvl_speed = 300
 
+# rethink logics here 
 def dicrease_hp_dick(dick, player, settings, background, guns):
     """Checks if mouse pointer colides with dick rect and decreases dick hp"""
     mouse_button_pressed = pygame.mouse.get_pressed()
     mouse_pos = pygame.mouse.get_pos()
-    if mouse_button_pressed[0] and dick.rect.collidepoint(mouse_pos) and settings.game_started_flag and dick.health > 0 and not guns.overheating:
-        dick.health -= 5
+    if mouse_button_pressed[0] and dick.rect.collidepoint(mouse_pos) and settings.game_started_flag and dick.health > 0 and not guns.overheating_flag:
+        dick.health -= guns.current_weapon_stats['dmg']
         background.draw_dick_hp(dick)
         
 def dick_check_hp(dick, settings, background):
@@ -216,7 +206,7 @@ def dick_check_hp(dick, settings, background):
         settings.dick_kill_flag = True
         dick.health = -1000
         
-def dick_change_imager(dick, settings, background):
+def dick_change_image(dick, settings, background):
     """Replace image of dick on the go"""      
     if dick.small_dick_flag:
         #store the x coordinat before transforming to restore the position
@@ -257,16 +247,44 @@ def bonus_live_collision(player, bonus_live, settings, guns):
     """Responde to player-BL and mouse pointer collision"""
     mouse_button_pressed = pygame.mouse.get_pressed()
     mouse_pos = pygame.mouse.get_pos()
-    if player.rect.colliderect(bonus_live.rect) or player.rotated_rect.colliderect(bonus_live.rect) or (mouse_button_pressed[0] and bonus_live.rect.collidepoint(mouse_pos) and not guns.overheating):
+    if player.rect.colliderect(bonus_live.rect) or player.rotated_rect.colliderect(bonus_live.rect) or (mouse_button_pressed[0] and bonus_live.rect.collidepoint(mouse_pos) and not guns.overheating_flag):
         settings.current_lives += 1
         bonus_live.place_postion()
 
 def change_weapon(guns, event):
     """Change weapon when pressing 123"""
     #need to do a check if weapon unlocked
-    if event.key == 49 and guns.weapon_slot_1:
+    if event.key == 49 and guns.weapon_slot_1: # 1 ak47
         guns.current_weapon = guns.weapons[1]
-    elif event.key == 50 and guns.weapon_slot_2:
+        guns.laod_weapon_stats()
+        guns.ammo_capacity = -1
+    elif event.key == 50 and guns.weapon_slot_2: # 2 laser
         guns.current_weapon = guns.weapons[2]
-    elif event.key == 51 and guns.weapon_slot_3: 
+        guns.laod_weapon_stats()
+        guns.ammo_capacity = 0
+    elif event.key == 51 and guns.weapon_slot_3: # 3 knife
         guns.current_weapon = guns.weapons[3]
+        guns.laod_weapon_stats()
+        guns.ammo_capacity = 0
+
+def shoot(bullets, guns, player):
+        """"""
+        speed_factor = 30
+        
+        if pygame.mouse.get_pressed()[0]:
+            bullets.mouse_x, bullets.mouse_y = pygame.mouse.get_pos()
+            # angle, bullet direction
+            bullets.dx = bullets.mouse_x - guns.rect.centerx
+            bullets.dy = bullets.mouse_y - guns.rect.centery
+            bullets.angle = math.atan2(bullets.dy, bullets.dx)
+            # initial position
+            bullets.bullet_x = guns.rect.centerx
+            bullets.bullet_y = guns.rect.centery
+            # velocity
+            bullets.bullet_vel_x = speed_factor * math.cos(bullets.angle)
+            bullets.bullet_vel_y = speed_factor * math.sin(bullets.angle)   
+
+            new_bullet = Bullets(guns, player)
+            new_bullet.bullet_vel_x = bullets.bullet_vel_x
+            new_bullet.bullet_vel_y = bullets.bullet_vel_y
+            bullets.add(new_bullet)

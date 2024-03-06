@@ -8,7 +8,6 @@ import random
 
 from math import cos, sin, pi
 
-from settings import Settings
 
 class Background():
     """A class to draw background and UI elements"""
@@ -339,7 +338,10 @@ class Background():
 
     def draw_ammo_charge(self, guns):
         """Draw % of charge ammo"""
-        self.draw_text(f'{guns.ammo_charge}%', self.screen_rect.width // 50, 'White')
+        if guns.current_weapon == guns.weapons[1]:
+            self.draw_text(f'{guns.ammo_capacity}', self.screen_rect.width // 50, 'White')
+        elif guns.current_weapon == guns.weapons[2]:
+            self.draw_text(f'{guns.ammo_capacity}%', self.screen_rect.width // 50, 'White')
         self.text_rect.center = guns.rect.topright
         self.screen.blit(self.text, self.text_rect)
            
